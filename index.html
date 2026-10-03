@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Guru's Come Back</title>
+<meta name="description" content="Guru's daily knee rehab routine">
+<meta name="theme-color" content="#1F5F7A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Come Back">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one narrow column like a clinic handout — header with phase band, exercise cards in prescribed order, then the 5-week log. */
+:root{
+  --bg:#F3F6F5; --surface:#FFFFFF; --ink:#16232B; --muted:#5B6B72; --line:#DCE4E2;
+  --accent:#1F5F7A; --accent-ink:#FFFFFF; --done:#2E8B57; --done-soft:#DDF0E4;
+  /* Phase colours borrowed from resistance-band grades */
+  --p30:#E8B21C; --p45:#D9483B; --p60:#2E8B57;
+  --track:#E6ECEA;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F171B; --surface:#172228; --ink:#E6EEF0; --muted:#93A4AB; --line:#26343B;
+  --accent:#5FB0D1; --accent-ink:#0F171B; --done:#5CC48A; --done-soft:#1C3A2A;
+  --p30:#F0C13C; --p45:#EE6A5D; --p60:#5CC48A; --track:#22313A; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0F171B; --surface:#172228; --ink:#E6EEF0; --muted:#93A4AB; --line:#26343B;
+  --accent:#5FB0D1; --accent-ink:#0F171B; --done:#5CC48A; --done-soft:#1C3A2A;
+  --p30:#F0C13C; --p45:#EE6A5D; --p60:#5CC48A; --track:#22313A; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,6vw,38px);font-weight:800;line-height:1.1}
+h2{font-size:20px;font-weight:700}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header{display:flex;flex-direction:column;gap:16px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.summary{display:flex;gap:20px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column}
+.stat b{font-family:var(--display);font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+
+.phase{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.phase button{border:0;background:transparent;border-radius:10px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.phase button .sec{font-family:var(--display);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.phase button .lbl{font-size:12px;color:var(--muted)}
+.phase button .band{width:28px;height:5px;border-radius:3px;background:var(--c)}
+.phase button[aria-pressed="true"]{background:var(--bg);box-shadow:inset 0 0 0 2px var(--c)}
+.phase-note{font-size:14px;color:var(--muted);margin:0}
+
+.motto{margin:0;font-family:var(--display);font-weight:500;font-size:clamp(17px,4.4vw,20px);line-height:1.35;color:var(--ink);padding-left:12px;border-left:4px solid var(--p45);text-wrap:pretty}
+.progress{height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--done);width:0;transition:width .4s ease}
+
+.list{display:flex;flex-direction:column;gap:12px;list-style:none;margin:0;padding:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color .2s}
+.card.done{border-color:var(--done)}
+.card.active{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.card-head{display:flex;gap:12px;align-items:flex-start}
+.num{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;background:var(--bg);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.card.done .num{background:var(--done);border-color:var(--done);color:var(--surface)}
+.card-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.card-title h3{font-size:19px;font-weight:700}
+.rx{font-size:14px;color:var(--muted)}
+.check{flex:none;border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+.card.done .check{background:var(--done-soft);border-color:var(--done);color:var(--done)}
+details{font-size:15px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:14px}
+details ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+
+.timer{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ring{position:relative;width:96px;height:96px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:8}
+.ring .bg{stroke:var(--track)}
+.ring .fg{stroke:var(--pc);stroke-linecap:round;transition:stroke .2s}
+.ring .t{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums;line-height:1}
+.ring .t small{display:block;font-family:var(--body);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.controls{display:flex;flex-direction:column;gap:8px;flex:1;min-width:160px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:10px 18px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.meta{font-size:13px;color:var(--muted)}
+
+.sets{display:flex;gap:8px;flex-wrap:wrap}
+.set{flex:1;min-width:80px;border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-size:13px;color:var(--muted)}
+.set b{display:block;font-family:var(--display);font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.set.cur{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.set.full{background:var(--done-soft);border-color:var(--done)}
+.set.full b{color:var(--done)}
+.rep{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tap{border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:20px;padding:16px 24px;min-width:150px}
+.tap:active{transform:scale(.98)}
+.tap:disabled{opacity:.5;cursor:default}
+
+.log{display:flex;flex-direction:column;gap:12px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .dow{font-size:11px;text-align:center;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.day{aspect-ratio:1;max-width:100%;border-radius:8px;background:var(--track);display:grid;place-items:center;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);position:relative}
+.day.l1{background:color-mix(in srgb,var(--done) 25%,var(--track))}
+.day.l2{background:color-mix(in srgb,var(--done) 55%,var(--track));color:var(--ink)}
+.day.l3{background:var(--done);color:var(--surface);font-weight:700}
+.day.today{box-shadow:0 0 0 2px var(--accent)}
+.day.future{background:transparent;border:1px dashed var(--line)}
+.legend{display:flex;gap:12px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:10px}
+.reset-row{display:flex;gap:8px;flex-wrap:wrap}
+#reset-today.armed{background:var(--p45);border-color:var(--p45);color:var(--surface)}
+.link{border:0;background:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;font-size:inherit}
+.save{font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;opacity:0;transition:.25s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="top">
+      <div>
+        <div class="eyebrow" id="today-label">Today</div>
+        <h1>Guru's Come Back</h1>
+      </div>
+      <div class="summary">
+        <div class="stat"><b id="done-count">0/6</b><span>done today</span></div>
+        <div class="stat"><b id="streak">0</b><span>day streak</span></div>
+      </div>
+    </div>
+    <p class="motto" id="motto"></p>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">Hold phase</div>
+      <div class="phase" role="group" aria-label="Hold phase">
+        <button type="button" id="ph-30" data-p="30" style="--c:var(--p30)"><span class="band"></span><span class="sec">30s</span><span class="lbl">Phase 1</span></button>
+        <button type="button" id="ph-45" data-p="45" style="--c:var(--p45)"><span class="band"></span><span class="sec">45s</span><span class="lbl">Phase 2</span></button>
+        <button type="button" id="ph-60" data-p="60" style="--c:var(--p60)"><span class="band"></span><span class="sec">60s</span><span class="lbl">Phase 3</span></button>
+      </div>
+    </div>
+    <p class="phase-note" id="phase-note"></p>
+  </header>
+
+  <ol class="list" id="list"></ol>
+
+  <section class="log">
+    <h2>Last 5 weeks</h2>
+    <div class="cal" id="cal"></div>
+    <div class="legend">
+      <span><i style="background:var(--track)"></i>None</span>
+      <span><i style="background:color-mix(in srgb,var(--done) 25%,var(--track))"></i>1–2</span>
+      <span><i style="background:color-mix(in srgb,var(--done) 55%,var(--track))"></i>3–5</span>
+      <span><i style="background:var(--done)"></i>All 6</span>
+    </div>
+  </section>
+
+  <footer>
+    <div class="reset-row">
+      <button type="button" class="btn ghost" id="reset-today">Reset today</button>
+      <button type="button" class="btn ghost" id="reset-cancel" hidden>Cancel</button>
+    </div>
+    <span class="save" id="save-status">Saved on this phone</span>
+    <span>Follow your doctor's or physiotherapist's instructions. Stop if you feel sharp pain.</span>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const EX = [
+  {id:"quad", name:"Quadriceps", type:"hold",
+   steps:["Lie or sit with your leg straight out in front of you.","Tighten the muscle on the front of your thigh, pressing the back of your knee down.","Hold for the phase time, then relax."]},
+  {id:"ham", name:"Hamstring", type:"hold",
+   steps:["Sit with your leg straight and the other knee bent.","Keep your back straight and lean forward from the hips until you feel a gentle stretch behind the thigh.","Hold for the phase time, then relax."]},
+  {id:"inner", name:"Inner thigh", type:"hold",
+   steps:["Lie on your back or sit with knees bent and a pillow or ball between your knees.","Squeeze your knees together.","Hold the squeeze for the phase time, then relax."]},
+  {id:"flex", name:"Sitting knee flexion", type:"hold",
+   steps:["Sit on a chair with your feet flat on the floor.","Slide your foot back under the chair to bend the knee as far as is comfortable.","Hold for the phase time, then slide it forward again."]},
+  {id:"slr", name:"Straight leg raise", type:"reps", reps:15, sets:3,
+   steps:["Lie on your back with the other knee bent and foot flat.","Tighten your thigh and lift the straight leg to the height of the other knee.","Lower it slowly. Tap the button after each lift."]},
+  {id:"slrh", name:"Straight leg raise hold", type:"hold",
+   steps:["Lie on your back with the other knee bent.","Tighten your thigh and lift the straight leg to the height of the other knee.","Hold it up for the phase time, then lower slowly."]},
+];
+const PHASE_NOTE = {30:"Phase 1 · hold each exercise for 30 seconds.",45:"Phase 2 · hold each exercise for 45 seconds.",60:"Phase 3 · hold each exercise for 60 seconds."};
+const MOTTOS = [
+  "Every rep today is a step closer to walking strong again.",
+  "Slow progress is still progress. Show up, Guru.",
+  "The knee heals on the days you don't skip.",
+  "Six exercises. A few minutes. A stronger tomorrow.",
+  "You don't have to be fast. You just have to be consistent.",
+  "Pain was yesterday. Today you build.",
+  "Small holds, big comeback.",
+  "Your future self is walking because of what you do right now.",
+  "Discipline today, freedom of movement tomorrow.",
+  "One more hold. Then one more. That's how comebacks are made.",
+  "Strong legs are built quietly, one day at a time.",
+  "The comeback is always stronger than the setback.",
+  "Don't count the days. Make the days count.",
+  "You've done harder things than this. Keep going.",
+];
+const CHEERS = ["Nice work!","Strong hold!","That's the way!","Keep it rolling!","One step closer!","Solid, Guru!"];
+const ALL_DONE = "All 6 done. That's today's comeback, Guru. See you tomorrow!";
+function mottoFor(k){ let h=0; for (const c of k) h=(h*31+c.charCodeAt(0))>>>0; return MOTTOS[h % MOTTOS.length]; }
+const cheer = () => CHEERS[Math.floor(Math.random()*CHEERS.length)];
+const LEAD = 3; // get-ready seconds
+const LS_KEY = "knee-routine-v1";
+
+const pad = n => String(n).padStart(2,"0");
+const key = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayKey = () => key(new Date());
+
+let state = {phase:30, log:{}};
+try { const s = JSON.parse(localStorage.getItem(LS_KEY)||"null"); if (s && s.log) state = s; } catch(e){}
+
+function day(k = todayKey()){
+  if (!state.log[k]) state.log[k] = {holds:{}, slrSets:0, slrReps:0};
+  const d = state.log[k]; d.holds ||= {}; d.slrSets ||= 0; d.slrReps ||= 0; return d;
+}
+function isDone(ex, d){ if (!d) return false; return ex.type==="reps" ? (d.slrSets||0) >= ex.sets : (d.holds?.[ex.id]||0) > 0; }
+function countDone(d){ return EX.filter(e=>isDone(e,d)).length; }
+
+/* ---------- persistence ---------- */
+let dbDoc = null, saveTimer = null, writing = false, dirty = false;
+function save(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){}
+  if (!dbDoc) return;
+  dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 600);
+}
+async function flush(){
+  if (writing || !dirty) return;
+  writing = true; dirty = false;
+  try { await dbDoc.set(JSON.parse(JSON.stringify(state))); setSave("Saved to your account"); }
+  catch(e){ setSave("Saved on this device only"); if (e && e.code==="invalid_argument") dbDoc = null; }
+  writing = false; if (dirty) flush();
+}
+function setSave(t){ document.getElementById("save-status").textContent = t; }
+
+async function connect(){
+  if (!window.claude?.use) return;
+  try {
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (!db || !user) return;
+    const id = await user.id(); if (!id) return;
+    const ref = db.doc("data/users/"+id+"/routine");
+    const snap = await ref.get();
+    if (snap.exists){
+      // Your account copy is the source of truth, so undo/reset sticks across devices
+      const remote = snap.data();
+      state = {phase: remote.phase || 30, log: JSON.parse(JSON.stringify(remote.log||{}))};
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){}
+    }
+    dbDoc = ref; setSave("Saved to your account");
+    if (!snap.exists && Object.keys(state.log).length) { dirty = true; flush(); }
+    renderAll();
+  } catch(e){ /* stay on device storage */ }
+}
+
+/* ---------- audio / feedback ---------- */
+let actx = null;
+function beep(freq=880, dur=.15, when=0){
+  try {
+    actx ||= new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = freq; o.connect(g); g.connect(actx.destination);
+    const t = actx.currentTime + when;
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.25,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.start(t); o.stop(t+dur+.02);
+  } catch(e){}
+}
+function buzzer(){
+  // Gym-style buzzer: three loud square-wave pulses with a detuned second voice
+  try {
+    actx ||= new (window.AudioContext||window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const t0 = actx.currentTime + .02;
+    const master = actx.createGain(); master.gain.value = .5; master.connect(actx.destination);
+    const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2400; lp.connect(master);
+    [0, .5, 1.0].forEach((off, i) => {
+      const dur = i === 2 ? .9 : .38, t = t0 + off;
+      const g = actx.createGain(); g.connect(lp);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(.6, t + .015);
+      g.gain.setValueAtTime(.6, t + dur - .05);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      [180, 186].forEach(f => {
+        const o = actx.createOscillator(); o.type = "square"; o.frequency.value = f;
+        o.connect(g); o.start(t); o.stop(t + dur + .02);
+      });
+    });
+  } catch(e){}
+}
+function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+let toastT;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),3000); }
+let wakeLock = null;
+async function lockScreen(on){
+  try { if (on && !wakeLock && navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen");
+        if (!on && wakeLock){ await wakeLock.release(); wakeLock = null; } } catch(e){ wakeLock = null; }
+}
+
+/* ---------- timer ---------- */
+const C = 2*Math.PI*42;
+let run = null; // {id, end, total, phase:'lead'|'hold', paused, remaining}
+function phaseColor(){ return `var(--p${state.phase})`; }
+
+function startTimer(id){
+  if (run && run.id !== id) stopTimer(true);
+  if (run && run.id === id && run.paused){ run.end = performance.now() + run.remaining*1000; run.paused = false; lockScreen(true); tick(); updateCard(id); return; }
+  if (run && run.id === id) return;
+  beep(660,.08);
+  run = {id, stage:"lead", total:LEAD, end:performance.now()+LEAD*1000, paused:false, lastSec:null};
+  lockScreen(true); tick(); updateActive();
+}
+function pauseTimer(){ if (!run || run.paused) return; run.remaining = Math.max(0,(run.end-performance.now())/1000); run.paused = true; lockScreen(false); updateCard(run.id); }
+function stopTimer(silent){ const id = run?.id; run = null; lockScreen(false); if (id){ updateCard(id); updateActive(); } }
+function tick(){
+  if (!run || run.paused) return;
+  const left = (run.end - performance.now())/1000;
+  const sec = Math.ceil(left);
+  if (run.stage==="lead" && sec !== run.lastSec && sec>0) beep(520,.07);
+  if (run.stage==="hold" && sec !== run.lastSec && sec<=3 && sec>0) beep(700,.06);
+  run.lastSec = sec;
+  if (left <= 0){
+    if (run.stage==="lead"){ run.stage="hold"; run.total=state.phase; run.end=performance.now()+state.phase*1000; run.lastSec=null; beep(990,.2); vibrate(80); }
+    else { finishHold(run.id); return; }
+  }
+  drawRing(run.id);
+  requestAnimationFrame(tick);
+}
+function finishHold(id){
+  run = null; lockScreen(false);
+  const d = day(); d.holds[id] = (d.holds[id]||0)+1; d.phase = state.phase; save();
+  buzzer(); vibrate([400,100,400,100,800]);
+  const ex = EX.find(e=>e.id===id); toast(`${cheer()} ${ex.name} done`);
+  renderAll(); focusNext(id);
+}
+function focusNext(id){
+  const idx = EX.findIndex(e=>e.id===id); const d = day();
+  const nxt = EX.slice(idx+1).concat(EX.slice(0,idx)).find(e=>!isDone(e,d));
+  if (nxt){ const el=document.getElementById("card-"+nxt.id); el && el.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"center"}); }
+  else { toast(ALL_DONE); window.scrollTo({top:0, behavior:"smooth"}); }
+}
+function drawRing(id){
+  const card = document.getElementById("card-"+id); if (!card) return;
+  const fg = card.querySelector(".fg"), t = card.querySelector(".t");
+  if (!fg) return;
+  let frac = 0, label = `${state.phase}<small>sec</small>`;
+  if (run && run.id===id){
+    const left = run.paused ? run.remaining : Math.max(0,(run.end-performance.now())/1000);
+    const s = Math.ceil(left);
+    if (run.stage==="lead"){ frac = 0; label = `${s}<small>get ready</small>`; }
+    else { frac = 1 - left/run.total; label = `${s}<small>${run.paused?"paused":"hold"}</small>`; }
+  }
+  fg.style.strokeDashoffset = String(C*(1-frac));
+  t.innerHTML = label;
+}
+
+/* ---------- reps ---------- */
+function addRep(){
+  const ex = EX.find(e=>e.id==="slr"), d = day();
+  if (d.slrSets >= ex.sets) return;
+  d.slrReps += 1; beep(740,.05); vibrate(20);
+  if (d.slrReps >= ex.reps){ d.slrSets += 1; d.slrReps = 0; beep(880,.15); beep(1175,.2,.17); vibrate([100,50,100]);
+    if (d.slrSets >= ex.sets){ save(); toast(`${cheer()} Straight leg raise done`); renderAll(); focusNext("slr"); return; }
+    toast(`Set ${d.slrSets} complete · rest, then start set ${d.slrSets+1}`);
+  }
+  save(); renderAll();
+}
+function undoRep(){
+  const d = day(), ex = EX.find(e=>e.id==="slr");
+  if (d.slrReps > 0) d.slrReps -= 1;
+  else if (d.slrSets > 0){ d.slrSets -= 1; d.slrReps = ex.reps-1; }
+  save(); renderAll();
+}
+
+/* ---------- render ---------- */
+function cardHTML(ex, i){
+  const d = day(), done = isDone(ex,d);
+  const rx = ex.type==="reps" ? `${ex.reps} reps × ${ex.sets} sets` : `Hold ${state.phase} seconds`;
+  let body;
+  if (ex.type==="hold"){
+    const n = d.holds[ex.id]||0;
+    body = `<div class="timer">
+      <div class="ring" style="--pc:${phaseColor()}"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="bg" cx="48" cy="48" r="42"/><circle class="fg" cx="48" cy="48" r="42" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg><div class="t" aria-live="off"></div></div>
+      <div class="controls">
+        <div class="btns" data-btns></div>
+        <span class="meta">${n ? `Completed ${n} ${n===1?"time":"times"} today` : "Not done yet today"}${n ? ` · <button type="button" class="link" data-undo="${ex.id}">Undo</button>` : ""}</span>
+      </div></div>`;
+  } else {
+    const sets = Array.from({length:ex.sets},(_,s)=>{
+      const full = s < d.slrSets, cur = s === d.slrSets;
+      const val = full ? ex.reps : cur ? d.slrReps : 0;
+      return `<div class="set ${full?"full":""} ${cur&&!done?"cur":""}"><b>${val}/${ex.reps}</b>Set ${s+1}</div>`;
+    }).join("");
+    body = `<div class="sets">${sets}</div>
+      <div class="rep">
+        <button type="button" class="tap" id="rep-btn" ${done?"disabled":""}>${done?"All sets done":`+1 rep`}</button>
+        <button type="button" class="btn ghost" id="rep-undo" ${(d.slrSets||d.slrReps)?"":"disabled"}>Undo</button>
+      </div>`;
+  }
+  return `<li class="card ${done?"done":""}" id="card-${ex.id}">
+    <div class="card-head">
+      <div class="num">${done?"✓":i+1}</div>
+      <div class="card-title"><h3>${ex.name}</h3><span class="rx">${rx}</span></div>
+      <button type="button" class="check" data-check="${ex.id}" aria-pressed="${done}">${done?"Done":"Mark done"}</button>
+    </div>
+    <details><summary>How to do it</summary><ol>${ex.steps.map(s=>`<li>${s}</li>`).join("")}</ol></details>
+    ${body}
+  </li>`;
+}
+function updateCard(id){
+  const card = document.getElementById("card-"+id); if (!card) return;
+  const b = card.querySelector("[data-btns]"); if (!b) return;
+  const running = run && run.id===id;
+  if (!running) b.innerHTML = `<button type="button" class="btn" data-start="${id}">Start ${state.phase}s hold</button>`;
+  else if (run.paused) b.innerHTML = `<button type="button" class="btn" data-start="${id}">Resume</button><button type="button" class="btn ghost" data-stop="${id}">Reset</button>`;
+  else b.innerHTML = `<button type="button" class="btn ghost" data-pause="${id}">Pause</button><button type="button" class="btn ghost" data-stop="${id}">Reset</button>`;
+  drawRing(id);
+}
+function updateActive(){ document.querySelectorAll(".card").forEach(c=>c.classList.toggle("active", !!run && c.id==="card-"+run.id)); }
+
+function streak(){
+  let n = 0; const d = new Date();
+  if (countDone(state.log[key(d)]) < EX.length) d.setDate(d.getDate()-1);
+  while (countDone(state.log[key(d)]) === EX.length){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function renderCal(){
+  const cal = document.getElementById("cal");
+  const dows = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(today); end.setDate(end.getDate() + (6 - ((today.getDay()+6)%7)));
+  const start = new Date(end); start.setDate(start.getDate()-34);
+  let html = dows.map(d=>`<div class="dow">${d}</div>`).join("");
+  for (let x = new Date(start); x <= end; x.setDate(x.getDate()+1)){
+    const k = key(x), n = countDone(state.log[k]);
+    const future = x > today;
+    const lvl = future ? "future" : n===EX.length ? "l3" : n>=3 ? "l2" : n>=1 ? "l1" : "";
+    const label = x.toLocaleDateString(undefined,{day:"numeric",month:"short"});
+    html += `<div class="day ${lvl} ${k===key(today)?"today":""}" title="${label}: ${future?"upcoming":n+"/6 done"}" aria-label="${label}: ${future?"upcoming":n+" of 6 done"}">${x.getDate()}</div>`;
+  }
+  cal.innerHTML = html;
+}
+function renderAll(){
+  document.getElementById("today-label").textContent = new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+  document.querySelectorAll(".phase button").forEach(b=>b.setAttribute("aria-pressed", String(+b.dataset.p===state.phase)));
+  document.getElementById("phase-note").textContent = PHASE_NOTE[state.phase];
+  const d = day(), n = countDone(d);
+  document.getElementById("motto").textContent = n === EX.length ? ALL_DONE : mottoFor(todayKey());
+  document.getElementById("done-count").textContent = `${n}/${EX.length}`;
+  document.getElementById("bar").style.width = (n/EX.length*100)+"%";
+  document.getElementById("streak").textContent = streak();
+  document.getElementById("list").innerHTML = EX.map(cardHTML).join("");
+  EX.filter(e=>e.type==="hold").forEach(e=>updateCard(e.id));
+  updateActive(); renderCal();
+}
+
+/* ---------- events ---------- */
+document.querySelector(".phase").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-p]"); if (!b) return;
+  if (run) stopTimer(true);
+  state.phase = +b.dataset.p; save(); renderAll();
+});
+document.getElementById("list").addEventListener("click", e=>{
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.start) startTimer(t.dataset.start);
+  else if (t.dataset.pause) pauseTimer();
+  else if (t.dataset.stop) stopTimer();
+  else if (t.id==="rep-btn") addRep();
+  else if (t.id==="rep-undo") undoRep();
+  else if (t.dataset.undo){
+    const d = day(); d.holds[t.dataset.undo] = Math.max(0,(d.holds[t.dataset.undo]||0)-1);
+    save(); renderAll(); toast("Undone");
+  }
+  else if (t.dataset.check){
+    const ex = EX.find(x=>x.id===t.dataset.check), d = day();
+    if (isDone(ex,d)){ if (ex.type==="reps"){ d.slrSets=0; d.slrReps=0; } else d.holds[ex.id]=0; }
+    else { if (ex.type==="reps"){ d.slrSets=ex.sets; d.slrReps=0; } else d.holds[ex.id]=1; d.phase=state.phase; }
+    save(); renderAll();
+  }
+});
+// Reset today: two-step confirm inside the page
+const resetBtn = document.getElementById("reset-today"), cancelBtn = document.getElementById("reset-cancel");
+let resetArmT;
+function disarm(){ resetBtn.classList.remove("armed"); resetBtn.textContent = "Reset today"; cancelBtn.hidden = true; clearTimeout(resetArmT); }
+resetBtn.addEventListener("click", ()=>{
+  if (!resetBtn.classList.contains("armed")){
+    resetBtn.classList.add("armed"); resetBtn.textContent = "Tap again to clear today"; cancelBtn.hidden = false;
+    resetArmT = setTimeout(disarm, 5000); return;
+  }
+  disarm(); if (run) stopTimer(true);
+  state.log[todayKey()] = {holds:{}, slrSets:0, slrReps:0};
+  save(); renderAll(); toast("Today's progress cleared");
+});
+cancelBtn.addEventListener("click", disarm);
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="visible" && run && !run.paused) lockScreen(true); });
+// roll over at midnight
+let lastDay = todayKey();
+setInterval(()=>{ if (todayKey()!==lastDay){ lastDay=todayKey(); if(!run) renderAll(); } }, 60000);
+
+renderAll();
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
