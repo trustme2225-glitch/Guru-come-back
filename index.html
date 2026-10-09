@@ -157,6 +157,21 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
 .dots{display:inline-flex;gap:3px;margin-right:6px;vertical-align:1px}
 .dots i{width:8px;height:8px;border-radius:50%;background:var(--track);display:inline-block}
 .dots i.on{background:var(--done)}
+.weeks{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.weeks::-webkit-scrollbar{display:none}
+.weeks button{flex:1 0 auto;min-width:110px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 14px;font-family:var(--display);font-weight:700;font-size:17px;display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
+.weeks button small{font-family:var(--body);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.weeks button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.weeks button[aria-pressed="true"] small{color:var(--bg);opacity:.75}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.checkbtn{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;text-align:left;min-width:0}
+.checkbtn .box{flex:none;width:30px;height:30px;border-radius:8px;border:2px solid var(--muted);display:grid;place-items:center;font-weight:800;font-size:16px}
+.checkbtn .cl{display:flex;flex-direction:column;min-width:0}
+.checkbtn .cl b{font-size:15px}
+.checkbtn .cl small{font-size:12px;color:var(--muted)}
+.checkbtn.ok{border-color:var(--done);background:var(--done-soft)}
+.checkbtn.ok .box{background:var(--done);border-color:var(--done);color:var(--surface)}
+.checkbtn.ok .cl small{color:var(--done)}
 .legchips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);min-width:0}
 .chip b{font-size:14px}
@@ -182,15 +197,19 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
         <div class="stat"><b id="streak">0</b><span>full-day streak</span></div>
       </div>
     </div>
+    <div class="weeks" role="group" aria-label="Plan week">
+      <button type="button" id="wk-1" data-w="w1"><small>Plan</small>Week 1</button>
+      <button type="button" id="wk-2" data-w="w2"><small>Plan</small>Week 2</button>
+    </div>
     <p class="motto" id="motto"></p>
     <div class="sessions" role="group" aria-label="Session">
       <button type="button" class="sess" id="s-am" data-s="am">
         <svg viewBox="0 0 24 24" fill="none" stroke="var(--p30)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="var(--p30)"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
-        <span class="sl"><b>Morning</b><span id="s-am-n">0/6</span></span>
+        <span class="sl"><b>Morning</b><span id="s-am-n"></span></span>
       </button>
       <button type="button" class="sess" id="s-pm" data-s="pm">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="var(--accent)"/></svg>
-        <span class="sl"><b>Evening</b><span id="s-pm-n">0/6</span></span>
+        <span class="sl"><b>Evening</b><span id="s-pm-n"></span></span>
       </button>
     </div>
     <div class="progress" aria-hidden="true"><i id="bar"></i></div>
@@ -243,30 +262,68 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
 <audio id="fx" preload="auto" playsinline></audio>
 
 <script>
-const EX = [
-  {id:"quad", name:"Quadriceps", type:"hold",
-   steps:["Lie or sit with your leg straight out in front of you.","Tighten the muscle on the front of your thigh, pressing the back of your knee down.","Hold for the phase time, then relax."]},
-  {id:"ham", name:"Hamstring", type:"hold",
-   steps:["Sit with your leg straight and the other knee bent.","Keep your back straight and lean forward from the hips until you feel a gentle stretch behind the thigh.","Hold for the phase time, then relax."]},
-  {id:"inner", name:"Inner thigh", type:"hold", both:true,
-   steps:["Lie on your back or sit with knees bent and a pillow or ball between your knees.","Squeeze your knees together. This works both legs at once.","Hold the squeeze for the phase time, then relax."]},
-  {id:"flex", name:"Sitting knee flexion", type:"hold",
-   steps:["Sit on a chair with your feet flat on the floor.","Slide your foot back under the chair to bend the knee as far as is comfortable.","Hold for the phase time, then slide it forward again."]},
-  {id:"slr", name:"Straight leg raise", type:"reps", reps:15, sets:3,
-   steps:["Lie on your back with the other knee bent and foot flat.","Tighten your thigh and lift the straight leg to the height of the other knee.","Lower it slowly. Tap the button after each lift."]},
-  {id:"slrh", name:"Straight leg raise hold", type:"hold", hold:60,
-   steps:["Lie on your back with the other knee bent.","Tighten your thigh and lift the straight leg to the height of the other knee.","Hold it up for 60 seconds (this one is always 60s), then lower slowly."]},
-];
+/* ---------- programs ----------
+   type "hold":  timed holds, alternating L/R, `sets` per leg, `hold` = fixed seconds (else the phase)
+   type "reps":  rep counter per leg (+ Mark done), `reps` × `sets`
+   type "check": just Mark done per leg, `reps` or `repsBy` {L,R} shown as the target */
+const STEP = {
+  quad:["Lie or sit with your leg straight out in front of you.","Tighten the muscle on the front of your thigh, pressing the back of your knee down.","Hold for the phase time, then relax."],
+  ham:["Sit with your leg straight and the other knee bent.","Keep your back straight and lean forward from the hips until you feel a gentle stretch behind the thigh.","Hold for the phase time, then relax."],
+  inner:["Lie on your back or sit with knees bent and a pillow or ball between your knees.","Squeeze your knees together. This works both legs at once.","Hold the squeeze for the phase time, then relax."],
+  slr:["Lie on your back with the other knee bent and foot flat.","Tighten your thigh and lift the straight leg to the height of the other knee.","Lower it slowly."],
+  slrh:["Lie on your back with the other knee bent.","Tighten your thigh and lift the straight leg to the height of the other knee.","Hold it up for the set time, then lower slowly."],
+};
+const PROGRAMS = {
+  w1: {name:"Week 1", ex:[
+    {id:"quad", name:"Quadriceps", type:"hold", sets:4, steps:STEP.quad},
+    {id:"ham", name:"Hamstring", type:"hold", sets:4, steps:STEP.ham},
+    {id:"inner", name:"Inner thigh", type:"hold", sets:4, both:true, steps:STEP.inner},
+    {id:"flex", name:"Sitting knee flexion", type:"hold", sets:4,
+     steps:["Sit on a chair with your feet flat on the floor.","Slide your foot back under the chair to bend the knee as far as is comfortable.","Hold for the phase time, then slide it forward again."]},
+    {id:"slr", name:"Straight leg raise", type:"reps", reps:15, sets:3, steps:STEP.slr},
+    {id:"slrh", name:"Straight leg raise hold", type:"hold", hold:60, sets:4, steps:STEP.slrh},
+  ]},
+  w2: {name:"Week 2", ex:[
+    {id:"w2quad", name:"Quadriceps", type:"hold", sets:3, steps:STEP.quad},
+    {id:"w2ham", name:"Hamstring", type:"hold", sets:3, steps:STEP.ham},
+    {id:"w2inner", name:"Inner thigh", type:"hold", sets:3, both:true, steps:STEP.inner},
+    {id:"feet", name:"Feet stretch", type:"check", both:true, reps:20,
+     steps:["Sit or lie with your legs straight.","Pull your toes up towards you, then point them away. That's one rep.","Do 20 slow reps, then tap Mark done."]},
+    {id:"kneefwd", name:"Knee forward", type:"check", repsBy:{R:20, L:15}, holdNote:"drag, hold 10s, release",
+     steps:["Sit with your leg out in front of you.","Drag the knee forward as far as is comfortable and hold for 10 seconds.","Release. Right leg 20 times, left leg 15 times, then tap Mark done for each leg."]},
+    {id:"sidedrag", name:"Side leg drag (45°)", type:"check", reps:20,
+     steps:["Lie on your back with both legs straight.","Slide (drag) one leg out to the side, about 45 degrees, keeping the toes pointing up.","Slide it back to the middle. 20 reps each leg, then tap Mark done."]},
+    {id:"w2slr", name:"Straight leg raise", type:"reps", reps:20, sets:1, steps:STEP.slr},
+    {id:"w2slrh", name:"Straight leg raise hold", type:"hold", hold:30, sets:3, steps:STEP.slrh},
+    {id:"sideraise", name:"Side leg raise", type:"reps", reps:20, sets:1,
+     steps:["Lie on your side with the bottom knee slightly bent.","Keep the top leg straight and lift it up towards the ceiling.","Lower it slowly."]},
+    {id:"sideraiseh", name:"Side leg raise hold", type:"hold", hold:30, sets:3,
+     steps:["Lie on your side with the bottom knee slightly bent.","Lift the top leg straight up and hold it there for 30 seconds.","Lower slowly. Turn over for the other leg."]},
+    {id:"backraise", name:"Back leg raise", type:"reps", reps:20, sets:1,
+     steps:["Lie on your stomach with your legs straight.","Tighten your buttock and lift one straight leg a little off the floor.","Lower it slowly."]},
+    {id:"backraiseh", name:"Back leg raise hold", type:"hold", hold:30, sets:3,
+     steps:["Lie on your stomach with your legs straight.","Lift one straight leg a little off the floor and hold for 30 seconds.","Lower slowly."]},
+    {id:"w2flex", name:"Sitting knee flexion", type:"reps", reps:20, sets:1,
+     steps:["Sit on a chair with your feet flat on the floor.","Slide your foot back under the chair to bend the knee as far as is comfortable.","Slide it forward again. That's one rep."]},
+    {id:"w2flexh", name:"Sitting knee flexion hold", type:"hold", hold:60, sets:1,
+     steps:["Sit on a chair with your feet flat on the floor.","Slide your foot back under the chair to bend the knee as far as is comfortable.","Hold it there for 60 seconds, then slide it forward. Left first, then right."]},
+  ]},
+};
+const WEEKS = Object.keys(PROGRAMS);
+const ALL_EX = WEEKS.flatMap(w=>PROGRAMS[w].ex);
+const exById = id => ALL_EX.find(e=>e.id===id);
+const EXL = () => PROGRAMS[state.week].ex;
+
 const LEGNAME = {L:"Left leg", R:"Right leg", B:"Both legs"};
+const LEGWORD = {L:"Left", R:"Right", B:"Both"};
 const SESSNAME = {am:"Morning", pm:"Evening"};
-const SETS = 4; // every timed exercise: 4 sets per leg, alternating left → right
 const holdOf = ex => ex.hold || state.phase;
-const PHASE_NOTE = {30:"Phase 1 · 4 sets of 30-second holds.",45:"Phase 2 · 4 sets of 45-second holds.",60:"Phase 3 · 4 sets of 60-second holds."};
+const PHASE_NOTE = {30:"Phase 1 · 30-second holds.",45:"Phase 2 · 45-second holds.",60:"Phase 3 · 60-second holds."};
 const MOTTOS = [
   "Every rep today is a step closer to walking strong again.",
   "Slow progress is still progress. Show up, Guru.",
   "The knee heals on the days you don't skip.",
-  "Six exercises. A few minutes. A stronger tomorrow.",
+  "A few minutes now. A stronger tomorrow.",
   "You don't have to be fast. You just have to be consistent.",
   "Pain was yesterday. Today you build.",
   "Small holds, big comeback.",
@@ -277,6 +334,7 @@ const MOTTOS = [
   "The comeback is always stronger than the setback.",
   "Don't count the days. Make the days count.",
   "You've done harder things than this. Keep going.",
+  "New week, new level. Keep climbing, Guru.",
 ];
 const CHEERS = ["Nice work!","Strong hold!","That's the way!","Keep it rolling!","One step closer!","Solid, Guru!"];
 const AM_DONE = "Morning session done. Rest up, Guru. See you this evening!";
@@ -292,27 +350,29 @@ const todayKey = () => key(new Date());
 
 /* ---------- data ----------
    state.log[YYYY-MM-DD] = { am: S, pm: S }
-   S = { h: { "quad-L": n, "quad-R": n, "inner": n, ... }, slr: { L:{s,r}, R:{s,r} } }  */
-const newSess = () => ({h:{}, slr:{L:{s:0,r:0}, R:{s:0,r:0}}});
-function fixSess(S){ S ||= newSess(); S.h ||= {}; S.slr ||= {}; for (const l of ["L","R"]){ S.slr[l] ||= {s:0,r:0}; S.slr[l].s ||= 0; S.slr[l].r ||= 0; } return S; }
+   S = { h: {holds done per key}, r: {key: {s,r}}, c: {key: 1}, slr: {L:{s,r},R:{s,r}} (week 1 leg raise) }  */
+const newSess = () => ({h:{}, r:{}, c:{}, slr:{L:{s:0,r:0}, R:{s:0,r:0}}});
+function fixSess(S){ S ||= newSess(); S.h ||= {}; S.r ||= {}; S.c ||= {}; S.slr ||= {}; for (const l of ["L","R"]){ S.slr[l] ||= {s:0,r:0}; S.slr[l].s ||= 0; S.slr[l].r ||= 0; } return S; }
 function migrate(st){
   st = st && typeof st === "object" ? st : {};
   st.phase = [30,45,60].includes(st.phase) ? st.phase : 30;
   st.rest = [10,15,20].includes(st.rest) ? st.rest : 10;
-  const wasV2 = st.v === 2;
+  const prevV = st.v;
   st.log ||= {};
   for (const [k,d] of Object.entries(st.log)){
     if (d && (d.am || d.pm)) { d.am = fixSess(d.am); d.pm = fixSess(d.pm); continue; }
-    if (wasV2) continue;
-    // old single-session format → morning, both legs
+    if (prevV >= 2) continue;
+    // very old single-session format → morning, both legs
     const am = newSess();
     for (const [id,n] of Object.entries(d?.holds||{})){ if (!n) continue; if (id==="inner") am.h.inner=n; else { am.h[id+"-L"]=n; am.h[id+"-R"]=n; } }
     for (const l of ["L","R"]) am.slr[l] = {s:d?.slrSets||0, r:d?.slrReps||0};
     st.log[k] = {am, pm:newSess()};
   }
-  // v2 stored one hold as "done"; from v3 a value counts sets (4 = done)
-  if (st.v !== 3) for (const d of Object.values(st.log)) for (const S of [d.am,d.pm]) for (const k in S.h) if (S.h[k] > 0) S.h[k] = SETS;
-  st.v = 3; return st;
+  // before v3 a hold value meant "done"; from v3 it counts sets
+  if (!(prevV >= 3)) for (const d of Object.values(st.log)) for (const S of [d.am,d.pm]) for (const k in S.h) if (S.h[k] > 0) S.h[k] = 4;
+  // v4 adds weeks: anyone upgrading moves on to Week 2
+  if (!WEEKS.includes(st.week)) st.week = prevV ? "w2" : "w1";
+  st.v = 4; return st;
 }
 let state = {phase:30, log:{}};
 try { state = migrate(JSON.parse(localStorage.getItem(LS_KEY)||"null")); } catch(e){ state = migrate(null); }
@@ -324,12 +384,22 @@ function dayRec(k = todayKey()){ state.log[k] ||= {am:newSess(), pm:newSess()}; 
 function sess(s = session){ return dayRec()[s]; }
 const legsOf = ex => ex.both ? ["B"] : ["L","R"];
 const hkey = (ex,leg) => ex.both ? ex.id : ex.id+"-"+leg;
-function unitDone(ex, leg, S){ if (!S) return false; return ex.type==="reps" ? (S.slr?.[leg]?.s||0) >= ex.sets : (S.h?.[hkey(ex,leg)]||0) >= SETS; }
-function unitProgress(ex, leg, S){ return ex.type==="reps" ? ((S.slr[leg].s*ex.reps + S.slr[leg].r)/(ex.sets*ex.reps)) : Math.min(SETS, S.h[hkey(ex,leg)]||0)/SETS; }
-function exDone(ex, S){ return legsOf(ex).every(l=>unitDone(ex,l,S)); }
-function countDone(S){ return S ? EX.filter(e=>exDone(e,S)).length : 0; }
-const TOTAL_UNITS = EX.reduce((a,e)=>a+legsOf(e).length,0);
-function unitsDone(S){ return EX.reduce((a,e)=>a+legsOf(e).reduce((b,l)=>b+unitProgress(e,l,S),0),0); }
+const repsFor = (ex, leg) => ex.repsBy ? ex.repsBy[leg] : ex.reps;
+function repOf(ex, leg, S){ if (ex.id==="slr") return S.slr[leg]; const k = hkey(ex,leg); return S.r[k] ||= {s:0,r:0}; }
+const setsOf = (ex, leg, S = sess()) => Math.min(ex.sets, S.h[hkey(ex,leg)]||0);
+function unitProgress(ex, leg, S){
+  if (ex.type==="check") return S.c[hkey(ex,leg)] ? 1 : 0;
+  if (ex.type==="reps"){ const R = repOf(ex,leg,S); return Math.min(1, (R.s*ex.reps + R.r)/(ex.sets*ex.reps)); }
+  return setsOf(ex,leg,S)/ex.sets;
+}
+const unitDone = (ex, leg, S) => unitProgress(ex, leg, S) >= 1;
+const exDone = (ex, S) => legsOf(ex).every(l=>unitDone(ex,l,S));
+const countDone = (S, list = EXL()) => list.filter(e=>exDone(e,S)).length;
+const totalUnits = (list = EXL()) => list.reduce((a,e)=>a+legsOf(e).length,0);
+const unitsDone = (S, list = EXL()) => list.reduce((a,e)=>a+legsOf(e).reduce((b,l)=>b+unitProgress(e,l,S),0),0);
+// a session counts as complete if every exercise of either week's plan is done
+const sessComplete = S => WEEKS.some(w=>countDone(S, PROGRAMS[w].ex)===PROGRAMS[w].ex.length);
+const sessStarted = S => WEEKS.some(w=>unitsDone(S, PROGRAMS[w].ex) > 0);
 function curLeg(ex){
   if (ex.both) return "B";
   if (!legSel[ex.id]) legSel[ex.id] = legsOf(ex).find(l=>!unitDone(ex,l,sess())) || "L";
@@ -445,13 +515,12 @@ async function lockScreen(on){
 const C = 2*Math.PI*42;
 let run = null;
 const phaseColor = () => `var(--p${state.phase})`;
-const ringColor = ex => ex.hold ? `var(--p${ex.hold})` : phaseColor();
-const setsOf = (ex, leg, S = sess()) => Math.min(SETS, S.h[hkey(ex,leg)]||0);
+const ringColor = ex => ex.hold ? `var(--p${[30,45,60].includes(ex.hold)?ex.hold:30})` : phaseColor();
 
 // Remaining holds for an exercise, alternating: L1, R1, L2, R2, … (skips sets already done)
 function queueFor(ex, S){
   const q = [];
-  for (let r = 0; r < SETS; r++) for (const leg of legsOf(ex)) if (setsOf(ex,leg,S) <= r) q.push({leg, set:r+1});
+  for (let r = 0; r < ex.sets; r++) for (const leg of legsOf(ex)) if (setsOf(ex,leg,S) <= r) q.push({leg, set:r+1});
   return q;
 }
 function elapsedOf(r){ return r.paused ? r.pausedAt : (performance.now() - r.t0)/1000; }
@@ -463,10 +532,9 @@ function phaseAt(r, e){
   return {stage:"rest", left: cyc - w, i: i+1};
 }
 const holdsCompleted = (r, e) => Math.max(0, Math.min(r.n, Math.floor((e - LEAD - r.dur)/(r.dur + r.rest)) + 1));
-const LEGWORD = {L:"Left", R:"Right", B:"Both"};
 
 function startTimer(id){
-  const ex = EX.find(e=>e.id===id);
+  const ex = exById(id);
   if (run && run.paused && run.id===id){
     run.t0 = performance.now() - run.pausedAt*1000; run.paused = false;
     playEl(trackEl, run.url, run.pausedAt).then(ok=>{ if (run) run.audioOk = ok; });
@@ -492,20 +560,23 @@ function stopTimer(){
   try { trackEl.pause(); trackEl.currentTime = 0; } catch(e){}
   lockScreen(false); if (id){ renderAll(); }
 }
+function creditHolds(r, upto){
+  const ex = exById(r.id), S = dayRec()[r.sess];
+  for (let i = r.credited; i < upto; i++){ const k = hkey(ex, r.q[i].leg); S.h[k] = Math.min(ex.sets, (S.h[k]||0)+1); }
+  r.credited = upto; S.phase = state.phase; save();
+}
 function tick(){
   if (!run || run.paused) return;
-  const r = run, e = elapsedOf(r), ex = EX.find(x=>x.id===r.id);
+  const r = run, e = elapsedOf(r), ex = exById(r.id);
   // credit finished holds (also catches up after the screen was locked)
   const done = holdsCompleted(r, e);
   if (done > r.credited){
-    const S = dayRec()[r.sess];
-    for (let i = r.credited; i < done; i++){ const k = hkey(ex, r.q[i].leg); S.h[k] = Math.min(SETS, (S.h[k]||0)+1); }
-    S.phase = state.phase; r.credited = done; save();
+    creditHolds(r, done);
     if (done < r.n){
       if (!r.audioOk) fx(buzzerTrack());
       vibrate([300,80,300]);
-      const nx = r.q[done];
-      toast(ex.both ? `Set ${r.q[done-1].set} done · rest ${r.rest}s` : `${LEGWORD[r.q[done-1].leg]} set ${r.q[done-1].set} done · switch to ${LEGWORD[nx.leg].toLowerCase()} leg`);
+      const prev = r.q[done-1], nx = r.q[done];
+      toast(ex.both ? `Set ${prev.set} done · rest ${r.rest}s` : `${LEGWORD[prev.leg]} set ${prev.set} done · switch to ${LEGWORD[nx.leg].toLowerCase()} leg`);
       updateMeta(r.id); updateLegs(r.id);
     }
   }
@@ -519,18 +590,16 @@ function finishHold(){
   const r = run; run = null; lockScreen(false);
   if (!r.audioOk) fx(buzzerTrack()); // track didn't play: sound the buzzer now
   vibrate([400,100,400,100,800]);
-  const ex = EX.find(e=>e.id===r.id), S = dayRec()[r.sess];
-  for (const l of legsOf(ex)) S.h[hkey(ex,l)] = Math.max(S.h[hkey(ex,l)]||0, 0);
-  for (let i = r.credited; i < r.n; i++){ const k = hkey(ex, r.q[i].leg); S.h[k] = Math.min(SETS,(S.h[k]||0)+1); }
-  save(); afterUnit(ex, r.sess);
+  creditHolds(r, r.n);
+  afterUnit(exById(r.id), r.sess);
 }
 function afterUnit(ex, s){
   const S = dayRec()[s];
-  const pmDone = countDone(dayRec().pm)===EX.length, amDone = countDone(dayRec().am)===EX.length;
   renderAll();
   if (!exDone(ex,S)) return;
-  if (countDone(S) === EX.length){
-    toast(amDone && pmDone ? ALL_DONE : s==="am" ? AM_DONE : "Evening session done. Great work, Guru!");
+  if (countDone(S) === EXL().length){
+    const both = sessComplete(dayRec().am) && sessComplete(dayRec().pm);
+    toast(both ? ALL_DONE : s==="am" ? AM_DONE : "Evening session done. Great work, Guru!");
     window.scrollTo({top:0, behavior:"smooth"});
   } else {
     toast(`${cheer()} ${ex.name} done`);
@@ -538,19 +607,19 @@ function afterUnit(ex, s){
   }
 }
 function focusNext(id){
-  const idx = EX.findIndex(e=>e.id===id), S = sess();
-  const nxt = EX.slice(idx+1).concat(EX.slice(0,idx)).find(e=>!exDone(e,S));
+  const list = EXL(), idx = list.findIndex(e=>e.id===id), S = sess();
+  const nxt = list.slice(idx+1).concat(list.slice(0,idx)).find(e=>!exDone(e,S));
   if (nxt){ const el=document.getElementById("card-"+nxt.id); el && el.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"center"}); }
 }
 function drawRing(id){
   const card = document.getElementById("card-"+id); if (!card) return;
   const fg = card.querySelector(".fg"), t = card.querySelector(".t"), ring = card.querySelector(".ring");
   if (!fg) return;
-  const ex = EX.find(e=>e.id===id);
+  const ex = exById(id);
   let frac = 0, label = `${holdOf(ex)}<small>sec</small>`, resting = false;
   if (run && run.id===id){
     const p = phaseAt(run, elapsedOf(run)), s = Math.ceil(p.left), h = run.q[Math.min(p.i, run.n-1)];
-    const who = ex.both ? `set ${h.set}/${SETS}` : `${LEGWORD[h.leg]} ${h.set}/${SETS}`;
+    const who = ex.both ? `set ${h.set}/${ex.sets}` : `${LEGWORD[h.leg]} ${h.set}/${ex.sets}`;
     if (p.stage==="lead") label = `${s}<small>${ex.both?"get ready":LEGWORD[h.leg]+" first"}</small>`;
     else if (p.stage==="hold"){ frac = 1 - p.left/run.dur; label = `${s}<small>${run.paused?"paused":who}</small>`; }
     else { resting = true; frac = 1 - p.left/run.rest; label = `${s}<small>${run.paused?"paused":ex.both?"rest":"next: "+LEGWORD[h.leg]}</small>`; }
@@ -559,41 +628,52 @@ function drawRing(id){
   fg.style.strokeDashoffset = String(C*(1-frac));
   t.innerHTML = label;
 }
+
 /* ---------- reps ---------- */
-function addRep(){
-  const ex = EX.find(e=>e.id==="slr"), leg = curLeg(ex), S = sess(), L = S.slr[leg];
-  if (L.s >= ex.sets) return;
-  L.r += 1; vibrate(20);
-  if (L.r >= ex.reps){
-    L.s += 1; L.r = 0; vibrate([300,80,300]);
+function addRep(id){
+  const ex = exById(id), leg = curLeg(ex), S = sess(), R = repOf(ex,leg,S);
+  if (R.s >= ex.sets) return;
+  R.r += 1; vibrate(20);
+  if (R.r >= ex.reps){
+    R.s += 1; R.r = 0; vibrate([300,80,300]);
     fx(buzzerTrack());
-    const other = leg==="L" ? "R" : "L", o = S.slr[other];
-    // alternate: switch to the other leg if it has fewer sets
-    if (o.s < ex.sets && o.s < L.s){ legSel[ex.id] = other; toast(`${LEGWORD[leg]} set ${L.s} done · now ${LEGWORD[other].toLowerCase()} leg`); }
-    else if (L.s < ex.sets) toast(`${LEGWORD[leg]} set ${L.s} done · rest, then set ${L.s+1}`);
-    else if (o.s < ex.sets) { legSel[ex.id] = other; toast(`${LEGNAME[leg]} done · finish the ${LEGWORD[other].toLowerCase()} leg`); }
     if (exDone(ex,S)){ save(); afterUnit(ex, session); return; }
+    switchAfterSet(ex, leg, S);
   } else fx(tickTrack());
   save(); renderAll();
 }
-function undoRep(){
-  const ex = EX.find(e=>e.id==="slr"), L = sess().slr[curLeg(ex)];
-  if (L.r > 0) L.r -= 1;
-  else if (L.s > 0){ L.s -= 1; L.r = ex.reps-1; }
+function switchAfterSet(ex, leg, S){
+  if (ex.both) return;
+  const R = repOf(ex,leg,S), other = leg==="L" ? "R" : "L", O = repOf(ex,other,S);
+  // alternate: go to the other leg if it has fewer sets
+  if (O.s < ex.sets && (O.s < R.s || R.s >= ex.sets)){ legSel[ex.id] = other; toast(`${LEGWORD[leg]} ${ex.sets>1?"set "+R.s+" ":""}done · now ${LEGWORD[other].toLowerCase()} leg`); }
+  else if (R.s < ex.sets) toast(`${LEGWORD[leg]} set ${R.s} done · rest, then set ${R.s+1}`);
+}
+function undoRep(id){
+  const ex = exById(id), R = repOf(ex,curLeg(ex),sess());
+  if (R.r > 0) R.r -= 1;
+  else if (R.s > 0){ R.s -= 1; R.r = ex.reps-1; }
   save(); renderAll();
+}
+function markReps(id){
+  const ex = exById(id), leg = curLeg(ex), S = sess(), R = repOf(ex,leg,S);
+  R.s = ex.sets; R.r = 0; save();
+  if (exDone(ex,S)){ afterUnit(ex, session); return; }
+  switchAfterSet(ex, leg, S); renderAll();
 }
 
 /* ---------- render ---------- */
 function legChips(ex, S){
   const cur = run && run.id===ex.id ? (()=>{ const p = phaseAt(run, elapsedOf(run)); return p.stage==="hold" || p.stage==="lead" ? run.q[Math.min(p.i,run.n-1)].leg : null; })() : null;
   return ["L","R"].map(l=>{
-    const n = setsOf(ex,l,S), ok = n >= SETS;
-    const dots = Array.from({length:SETS},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("");
-    return `<div class="chip ${ok?"ok":""} ${cur===l?"now":""}"><b>${l==="L"?"Left":"Right"}</b><span class="dots">${dots}</span><small>${n}/${SETS}</small></div>`;
+    const n = setsOf(ex,l,S), ok = n >= ex.sets;
+    const dots = Array.from({length:ex.sets},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("");
+    return `<div class="chip ${ok?"ok":""} ${cur===l?"now":""}"><b>${l==="L"?"Left":"Right"}</b><span class="dots">${dots}</span><small>${n}/${ex.sets}</small></div>`;
   }).join("");
 }
-function updateLegs(id){ const ex = EX.find(e=>e.id===id), el = document.querySelector(`#card-${id} .legchips`); if (el) el.innerHTML = legChips(ex, sess()); }
+function updateLegs(id){ const ex = exById(id), el = document.querySelector(`#card-${id} .legchips`); if (el) el.innerHTML = legChips(ex, sess()); }
 function legsHTML(ex, S){
+  if (ex.type==="check") return "";
   if (ex.both) return `<div class="both">Both legs together</div>`;
   if (ex.type==="hold") return `<div class="legchips" aria-label="Sets per leg">${legChips(ex,S)}</div>`;
   const cur = curLeg(ex);
@@ -602,10 +682,16 @@ function legsHTML(ex, S){
     return `<button type="button" data-leg="${l}" data-ex="${ex.id}" aria-pressed="${l===cur}" class="${ok?"ok":""}"><span class="dot">${ok?"✓":""}</span>${l==="L"?"Left":"Right"}</button>`;
   }).join("")}</div>`;
 }
+function rxOf(ex){
+  if (ex.type==="check"){
+    if (ex.repsBy) return `Right ${ex.repsBy.R} · Left ${ex.repsBy.L} reps${ex.holdNote?" · "+ex.holdNote:""}`;
+    return `${ex.reps} reps${ex.both?" · 1 set":" · each leg"}`;
+  }
+  if (ex.type==="reps") return `${ex.reps} reps × ${ex.sets} ${ex.sets===1?"set":"sets"} · each leg`;
+  return `${ex.sets===1?"1 hold":ex.sets+" sets ×"} ${holdOf(ex)}s${ex.sets===1?"":" hold"}${ex.hold?" (fixed)":""} · ${ex.both?"both legs together":ex.sets===1?"each leg":"alternate left/right"}`;
+}
 function cardHTML(ex, i){
-  const S = sess(), done = exDone(ex,S), leg = curLeg(ex);
-  const each = ex.both ? "both legs together" : ex.type==="reps" ? "each leg" : "alternate left/right";
-  const rx = ex.type==="reps" ? `${ex.reps} reps × ${ex.sets} sets · ${each}` : `${SETS} sets × ${holdOf(ex)}s hold${ex.hold?" (fixed)":""} · ${each}`;
+  const S = sess(), done = exDone(ex,S);
   let body;
   if (ex.type==="hold"){
     body = `<div class="timer">
@@ -614,23 +700,31 @@ function cardHTML(ex, i){
         <div class="btns" data-btns></div>
         <span class="meta" data-meta>${metaHTML(ex)}</span>
       </div></div>`;
-  } else {
-    const L = S.slr[leg], ldone = L.s >= ex.sets;
+  } else if (ex.type==="reps"){
+    const leg = curLeg(ex), R = repOf(ex,leg,S), ldone = R.s >= ex.sets;
     const sets = Array.from({length:ex.sets},(_,s)=>{
-      const full = s < L.s, cur = s === L.s;
-      const val = full ? ex.reps : cur ? L.r : 0;
-      return `<div class="set ${full?"full":""} ${cur&&!ldone?"cur":""}"><b>${val}/${ex.reps}</b>Set ${s+1}</div>`;
+      const full = s < R.s, cur = s === R.s;
+      const val = full ? ex.reps : cur ? R.r : 0;
+      return `<div class="set ${full?"full":""} ${cur&&!ldone?"cur":""}"><b>${val}/${ex.reps}</b>${ex.sets>1?`Set ${s+1}`:LEGWORD[leg]}</div>`;
     }).join("");
     body = `<div class="sets">${sets}</div>
       <div class="rep">
-        <button type="button" class="tap" id="rep-btn" ${ldone?"disabled":""}>${ldone?`${LEGNAME[leg]} done`:`+1 rep`}</button>
-        <button type="button" class="btn ghost" id="rep-undo" ${(L.s||L.r)?"":"disabled"}>Undo</button>
-      </div>`;
+        <button type="button" class="tap" data-rep="${ex.id}" ${ldone?"disabled":""}>${ldone?`${LEGNAME[leg]} done`:`+1 rep`}</button>
+        <button type="button" class="btn ghost" data-repundo="${ex.id}" ${(R.s||R.r)?"":"disabled"}>Undo</button>
+      </div>
+      ${ldone ? "" : `<span class="meta"><button type="button" class="link" data-repmark="${ex.id}">Mark ${ex.both?"":LEGWORD[leg].toLowerCase()+" leg "}done</button> if you counted yourself</span>`}`;
+  } else {
+    body = `<div class="checks">${(ex.repsBy ? ["R","L"] : legsOf(ex)).map(l=>{
+      const ok = !!S.c[hkey(ex,l)], n = repsFor(ex,l);
+      const label = l==="B" ? `${n} reps` : `${LEGWORD[l]} · ${n} reps`;
+      return `<button type="button" class="checkbtn ${ok?"ok":""}" data-check="${ex.id}" data-cleg="${l}" aria-pressed="${ok}">
+        <span class="box">${ok?"✓":""}</span><span class="cl"><b>${label}</b><small>${ok?"Done · tap to undo":"Tap when finished"}</small></span></button>`;
+    }).join("")}</div>`;
   }
   return `<li class="card ${done?"done":""}" id="card-${ex.id}">
     <div class="card-head">
       <div class="num">${done?"✓":i+1}</div>
-      <div class="card-title"><h3>${ex.name}</h3><span class="rx">${rx}</span></div>
+      <div class="card-title"><h3>${ex.name}</h3><span class="rx">${rxOf(ex)}</span></div>
     </div>
     ${legsHTML(ex,S)}
     <details><summary>How to do it</summary><ol>${ex.steps.map(s=>`<li>${s}</li>`).join("")}</ol></details>
@@ -638,28 +732,28 @@ function cardHTML(ex, i){
   </li>`;
 }
 function metaHTML(ex){
-  const S = sess(), total = legsOf(ex).reduce((a,l)=>a+setsOf(ex,l,S),0), max = SETS*legsOf(ex).length;
-  const txt = ex.both ? `${total}/${SETS} sets` : `${total}/${max} holds`;
+  const S = sess(), total = legsOf(ex).reduce((a,l)=>a+setsOf(ex,l,S),0), max = ex.sets*legsOf(ex).length;
+  const txt = ex.both ? `${total}/${ex.sets} sets` : `${total}/${max} holds`;
   return txt +
     (total ? ` · <button type="button" class="link" data-undo="${ex.id}">Undo last</button>` : "") +
     (total < max ? ` · <button type="button" class="link" data-mark="${ex.id}">Mark done</button>` : "");
 }
-function updateMeta(id){ const ex = EX.find(e=>e.id===id), m = document.querySelector(`#card-${id} [data-meta]`); if (m) m.innerHTML = metaHTML(ex); }
+function updateMeta(id){ const ex = exById(id), m = document.querySelector(`#card-${id} [data-meta]`); if (m) m.innerHTML = metaHTML(ex); }
 function updateCard(id){
   const card = document.getElementById("card-"+id); if (!card) return;
   const b = card.querySelector("[data-btns]"); if (!b) return;
-  const ex = EX.find(e=>e.id===id), running = run && run.id===id && run.sess===session;
+  const ex = exById(id), running = run && run.id===id && run.sess===session;
   const q = queueFor(ex, sess());
   if (!running) b.innerHTML = !q.length
     ? `<button type="button" class="btn ghost" disabled>All sets done</button>`
-    : `<button type="button" class="btn" data-start="${id}">${q.length < SETS*legsOf(ex).length ? `Continue · ${ex.both?"set "+q[0].set:LEGWORD[q[0].leg]+" "+q[0].set}` : `Start ${SETS}×${holdOf(ex)}s${ex.both?"":" L/R"}`}</button>`;
+    : `<button type="button" class="btn" data-start="${id}">${q.length < ex.sets*legsOf(ex).length ? `Continue · ${ex.both?"set "+q[0].set:LEGWORD[q[0].leg]+" "+q[0].set}` : `Start ${ex.sets}×${holdOf(ex)}s${ex.both?"":" L/R"}`}</button>`;
   else if (run.paused) b.innerHTML = `<button type="button" class="btn" data-start="${id}">Resume</button><button type="button" class="btn ghost" data-stop="${id}">Stop</button>`;
   else b.innerHTML = `<button type="button" class="btn ghost" data-pause="${id}">Pause</button><button type="button" class="btn ghost" data-stop="${id}">Stop</button>`;
   drawRing(id);
 }
 function updateActive(){ document.querySelectorAll(".card").forEach(c=>c.classList.toggle("active", !!run && c.id==="card-"+run.id)); }
 
-function fullDay(k){ const d = state.log[k]; return !!d && countDone(d.am)===EX.length && countDone(d.pm)===EX.length; }
+function fullDay(k){ const d = state.log[k]; return !!d && sessComplete(fixSess(d.am)) && sessComplete(fixSess(d.pm)); }
 function streak(){
   let n = 0; const d = new Date();
   if (!fullDay(key(d))) d.setDate(d.getDate()-1);
@@ -668,9 +762,10 @@ function streak(){
 }
 function dayLevel(k){
   const d = state.log[k]; if (!d) return 0;
-  const full = (countDone(d.am)===EX.length) + (countDone(d.pm)===EX.length);
+  const am = fixSess(d.am), pm = fixSess(d.pm);
+  const full = sessComplete(am) + sessComplete(pm);
   if (full===2) return 3; if (full===1) return 2;
-  return (unitsDone(d.am)+unitsDone(d.pm)) > 0 ? 1 : 0;
+  return sessStarted(am) || sessStarted(pm) ? 1 : 0;
 }
 function renderCal(){
   const cal = document.getElementById("cal");
@@ -689,31 +784,39 @@ function renderCal(){
   cal.innerHTML = html;
 }
 function renderAll(){
-  const d = dayRec(), S = d[session];
+  const d = dayRec(), S = d[session], list = EXL(), N = list.length;
   document.getElementById("today-label").textContent = new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+  document.querySelectorAll(".weeks button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.w===state.week)));
   document.querySelectorAll(".phase button").forEach(b=>b.setAttribute("aria-pressed", String(+b.dataset.p===state.phase)));
-  document.getElementById("phase-note").textContent = PHASE_NOTE[state.phase] + ` ${state.rest}s rest between holds. Leg raise hold stays 60s.`;
+  const phased = list.filter(e=>e.type==="hold" && !e.hold).map(e=>e.name);
+  document.getElementById("phase-note").textContent = `${PHASE_NOTE[state.phase].replace(".","")} for ${phased.join(", ").replace(/, ([^,]*)$/," and $1")}. Fixed holds keep their own time.`;
   document.querySelectorAll(".rest button").forEach(b=>b.setAttribute("aria-pressed", String(+b.dataset.r===state.rest)));
   const amN = countDone(d.am), pmN = countDone(d.pm);
   for (const s of ["am","pm"]){
     const n = s==="am"?amN:pmN, b = document.getElementById("s-"+s);
     b.setAttribute("aria-pressed", String(s===session));
-    b.classList.toggle("complete", n===EX.length);
-    document.getElementById(`s-${s}-n`).textContent = n===EX.length ? "Done ✓" : `${n}/${EX.length} done`;
+    b.classList.toggle("complete", n===N);
+    document.getElementById(`s-${s}-n`).textContent = n===N ? "Done ✓" : `${n}/${N} done`;
   }
-  const sessDone = (amN===EX.length)+(pmN===EX.length);
+  const sessDone = sessComplete(d.am) + sessComplete(d.pm);
   document.getElementById("sess-count").textContent = `${sessDone}/2`;
-  document.getElementById("motto").textContent = sessDone===2 ? ALL_DONE : mottoFor(todayKey());
-  document.getElementById("bar").style.width = (unitsDone(S)/TOTAL_UNITS*100)+"%";
+  document.getElementById("motto").textContent = sessDone===2 ? ALL_DONE : mottoFor(todayKey()+state.week);
+  document.getElementById("bar").style.width = (unitsDone(S)/totalUnits()*100)+"%";
   document.getElementById("streak").textContent = streak();
-  document.getElementById("list").innerHTML = EX.map(cardHTML).join("");
-  EX.filter(e=>e.type==="hold").forEach(e=>updateCard(e.id));
+  document.getElementById("list").innerHTML = list.map(cardHTML).join("");
+  list.filter(e=>e.type==="hold").forEach(e=>updateCard(e.id));
   if (!document.getElementById("reset-sess").classList.contains("armed"))
     document.getElementById("reset-sess").textContent = `Reset ${SESSNAME[session].toLowerCase()} session`;
   updateActive(); renderCal();
 }
 
 /* ---------- events ---------- */
+document.querySelector(".weeks").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-w]"); if (!b || b.dataset.w===state.week) return;
+  if (run) stopTimer();
+  state.week = b.dataset.w; for (const k in legSel) delete legSel[k];
+  save(); renderAll(); toast(`${PROGRAMS[state.week].name} plan`);
+});
 document.querySelector(".phase").addEventListener("click", e=>{
   const b = e.target.closest("button[data-p]"); if (!b) return;
   if (run) stopTimer();
@@ -736,23 +839,31 @@ document.getElementById("test-sound").addEventListener("click", ()=>{
 });
 document.getElementById("list").addEventListener("click", e=>{
   const t = e.target.closest("button"); if (!t) return;
-  if (t.dataset.leg){
-    if (run && run.id===t.dataset.ex) stopTimer();
-    legSel[t.dataset.ex] = t.dataset.leg; renderAll(); return;
+  const d = t.dataset;
+  if (d.leg){
+    if (run && run.id===d.ex) stopTimer();
+    legSel[d.ex] = d.leg; renderAll(); return;
   }
-  if (t.dataset.start) startTimer(t.dataset.start);
-  else if (t.dataset.pause) pauseTimer();
-  else if (t.dataset.stop) stopTimer();
-  else if (t.id==="rep-btn") addRep();
-  else if (t.id==="rep-undo") undoRep();
-  else if (t.dataset.undo || t.dataset.mark){
-    const ex = EX.find(x=>x.id===(t.dataset.undo||t.dataset.mark)), S = sess();
+  if (d.start) startTimer(d.start);
+  else if (d.pause) pauseTimer();
+  else if (d.stop) stopTimer();
+  else if (d.rep) addRep(d.rep);
+  else if (d.repundo) undoRep(d.repundo);
+  else if (d.repmark) markReps(d.repmark);
+  else if (d.check){
+    const ex = exById(d.check), S = sess(), k = hkey(ex, d.cleg);
+    if (S.c[k]){ delete S.c[k]; save(); renderAll(); toast("Undone"); }
+    else { S.c[k] = 1; vibrate(40); save();
+      if (exDone(ex,S)) afterUnit(ex, session); else { renderAll(); toast(`${cheer()} ${LEGNAME[d.cleg]} done`); } }
+  }
+  else if (d.undo || d.mark){
+    const ex = exById(d.undo||d.mark), S = sess();
     if (run && run.id===ex.id) stopTimer();
-    if (t.dataset.undo){
+    if (d.undo){
       // remove the most recent hold: right leg if it's level with left, else left
       const legs = legsOf(ex), last = legs.length===1 ? legs[0] : (setsOf(ex,"R",S) >= setsOf(ex,"L",S) && setsOf(ex,"R",S) > 0 ? "R" : "L");
-      const k = hkey(ex,last); S.h[k] = Math.max(0, Math.min(SETS,S.h[k]||0)-1); save(); renderAll(); toast("Last hold removed");
-    } else { for (const l of legsOf(ex)) S.h[hkey(ex,l)] = SETS; save(); afterUnit(ex, session); }
+      const k = hkey(ex,last); S.h[k] = Math.max(0, Math.min(ex.sets,S.h[k]||0)-1); save(); renderAll(); toast("Last hold removed");
+    } else { for (const l of legsOf(ex)) S.h[hkey(ex,l)] = ex.sets; save(); afterUnit(ex, session); }
   }
 });
 // Reset current session: two-step confirm inside the page
@@ -780,7 +891,6 @@ renderAll();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
-
 </script>
 </body>
 </html>
