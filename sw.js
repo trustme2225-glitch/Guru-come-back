@@ -1,5 +1,5 @@
 // Guru's Come Back: offline support
-const CACHE = "comeback-v6";
+const CACHE = "comeback-v7";
 const CORE = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
